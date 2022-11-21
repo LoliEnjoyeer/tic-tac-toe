@@ -19,5 +19,4 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
 /**
  * todo CSS
  * todo socketIO
- * todo ScoreBoard
  */
