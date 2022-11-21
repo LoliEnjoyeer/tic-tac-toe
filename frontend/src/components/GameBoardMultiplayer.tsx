@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Box from "./Box";
 import Scoreboard from "./Scoreboard";
+import { io } from "socket.io-client";
 import { GameState, PlayerTurn } from "../types";
 
 const WINNING_COMBINATIONS = [
@@ -22,18 +23,49 @@ const checkWin = (gameState: GameState, playerTurn: PlayerTurn) => {
   });
 };
 
+const socket = io("http://localhost:3001");
+
 function GameBoard() {
   const defaultGameState: GameState = ["", "", "", "", "", "", "", "", ""];
   const [gameState, setGameState] = useState<GameState>(defaultGameState);
   const playerTurn = useRef<PlayerTurn>("X");
   const [whoWon, setWhoWon] = useState<PlayerTurn | null>(null);
 
+  const [seed, setSeed] = useState<number>(1);
+
   const scoreX = useRef<number>(0);
   const scoreO = useRef<number>(0);
+
+  const [roomID, setRoomID] = useState<string | null>(null);
 
   useEffect(() => {
     setWhoWon(null);
   }, []);
+
+  useEffect(() => {
+    if (whoWon !== null) {
+      console.log(whoWon);
+      if (whoWon === "X") {
+        scoreX.current++;
+      } else {
+        scoreO.current++;
+      }
+
+      runEvent();
+      reset();
+    }
+  }, [whoWon]);
+
+  const reset = () => {
+    setSeed(Math.random());
+  };
+
+  socket.on("result_response", (score) => {
+    scoreX.current = score.serverScoreX;
+    scoreO.current = score.serverScoreO;
+
+    reset();
+  });
 
   const handleBoxChange = (boxIndex: number) => {
     if (whoWon) return;
@@ -53,6 +85,13 @@ function GameBoard() {
     setGameState(defaultGameState);
   };
 
+  const runEvent = () => {
+    socket.emit("score", {
+      scoreX: scoreX.current,
+      scoreO: scoreO.current,
+    });
+  };
+
   return (
     <div className="flex h-screen bg-black flex-row w-screen justify-between">
       <h1>{`It's ${playerTurn.current} turn`}</h1>
@@ -69,18 +108,16 @@ function GameBoard() {
         <Box onChange={() => handleBoxChange(7)} value={gameState[7]} />
         <Box onChange={() => handleBoxChange(8)} value={gameState[8]} />
 
-        {whoWon && (
-          <>
-            {whoWon === "X" ? scoreX.current++ : scoreO.current++}
-
-            <h1>{`Player ${whoWon} won`}</h1>
-            <button onClick={() => resetGame()}>Reset Game</button>
-          </>
-        )}
+        {whoWon && <h1>{`Player ${whoWon} won`}</h1>}
       </div>
       <div>
-        <Scoreboard scoreO={scoreO.current} scoreX={scoreX.current} />
+        <Scoreboard
+          key={seed}
+          scoreO={scoreO.current}
+          scoreX={scoreX.current}
+        />
       </div>
+      <button onClick={() => resetGame()}>Reset Game</button>
     </div>
   );
 }

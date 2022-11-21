@@ -8,7 +8,7 @@ interface ScoreboardProps {
 function Scoreboard({ scoreX, scoreO }: ScoreboardProps) {
   return (
     <div>
-      <h1>{`player X: ${scoreX}`}</h1> <br />
+      <h1>{`player X: ${scoreX}`}</h1>
       <h1>{`player O: ${scoreO}`}</h1>
     </div>
   );
