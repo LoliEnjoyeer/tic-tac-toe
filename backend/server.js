@@ -16,9 +16,19 @@ const io = require("socket.io")(server, {
 
 io.on("connection", (socket) => {
   socket.on("score", (result) => {
-    socket.broadcast.emit("result_response", {
+    socket.to(result.roomCode).emit("result_response", {
       serverScoreX: result.scoreX,
       serverScoreO: result.scoreO,
     });
+  });
+
+  socket.on("create_room", (roomCode) => {
+    socket.join(roomCode);
+    socket.emit("room_created", roomCode);
+  });
+
+  socket.on("join_room", (code) => {
+    socket.join(code);
+    socket.emit("joined_room", code);
   });
 });

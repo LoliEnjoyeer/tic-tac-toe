@@ -1,18 +1,23 @@
 import React, { useState } from "react";
-import { randomBytes } from "crypto";
+import { Socket } from "socket.io-client";
+import GameBoard from "./GameBoardMultiplayer";
 
-function RoomCreation() {
-  const [roomID, setRoomID] = useState<string>("");
+interface CreationProps {
+  socket: Socket;
+  getRoomCode: (data: string) => void;
+}
+
+const RoomCreation = ({ socket, getRoomCode }: CreationProps) => {
   const GenerateCode = () => {
-    setRoomID(Math.random().toString(16).substr(2, 6));
+    getRoomCode(Math.random().toString(16).substr(2, 6));
   };
+
   return (
     <div>
-      <h1>Room Creation</h1>
-      {roomID && <h1>{roomID}</h1>}
-      <button onClick={GenerateCode}>Generate Your Room Code</button>
+      <h1>Create Room</h1>
+      <button onClick={GenerateCode}>Generate Code</button>
     </div>
   );
-}
+};
 
 export default RoomCreation;

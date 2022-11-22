@@ -1,8 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import Box from "./Box";
 import Scoreboard from "./Scoreboard";
-import { io } from "socket.io-client";
+import { Socket } from "socket.io-client";
 import { GameState, PlayerTurn } from "../types";
+
+interface GameBoardMultiplayerProps {
+  socket: Socket;
+  roomCode: string;
+}
 
 const WINNING_COMBINATIONS = [
   [0, 1, 2],
@@ -23,9 +28,7 @@ const checkWin = (gameState: GameState, playerTurn: PlayerTurn) => {
   });
 };
 
-const socket = io("http://localhost:3001");
-
-function GameBoard() {
+function GameBoard({ socket, roomCode }: GameBoardMultiplayerProps) {
   const defaultGameState: GameState = ["", "", "", "", "", "", "", "", ""];
   const [gameState, setGameState] = useState<GameState>(defaultGameState);
   const playerTurn = useRef<PlayerTurn>("X");
@@ -36,15 +39,12 @@ function GameBoard() {
   const scoreX = useRef<number>(0);
   const scoreO = useRef<number>(0);
 
-  const [roomID, setRoomID] = useState<string | null>(null);
-
   useEffect(() => {
     setWhoWon(null);
   }, []);
 
   useEffect(() => {
     if (whoWon !== null) {
-      console.log(whoWon);
       if (whoWon === "X") {
         scoreX.current++;
       } else {
@@ -89,6 +89,7 @@ function GameBoard() {
     socket.emit("score", {
       scoreX: scoreX.current,
       scoreO: scoreO.current,
+      roomCode: roomCode,
     });
   };
 
