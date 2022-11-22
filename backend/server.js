@@ -31,4 +31,9 @@ io.on("connection", (socket) => {
     socket.join(code);
     socket.emit("joined_room", code);
   });
+
+  socket.on("new_move", (data) => {
+    socket.to(data.roomCode).emit("update_gamestate", data.newGameState);
+    console.log(data.newGameState);
+  });
 });

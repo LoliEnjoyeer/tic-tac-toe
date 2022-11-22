@@ -41,6 +41,10 @@ function GameBoard({ socket, roomCode }: GameBoardMultiplayerProps) {
 
   useEffect(() => {
     setWhoWon(null);
+    socket.on("update_gamestate", (newGameState) => {
+      console.log("test123");
+      setGameState(newGameState);
+    });
   }, []);
 
   useEffect(() => {
@@ -67,16 +71,19 @@ function GameBoard({ socket, roomCode }: GameBoardMultiplayerProps) {
     reset();
   });
 
-  const handleBoxChange = (boxIndex: number) => {
+  const handleBoxChange = async (boxIndex: number) => {
     if (whoWon) return;
     const newGameState = gameState.map((element, index) => {
       return index === boxIndex ? playerTurn.current : element;
     });
 
     setGameState(newGameState);
+    socket.emit("new_move", { newGameState: newGameState, roomCode: roomCode });
+
     if (checkWin(newGameState, playerTurn.current)) {
       setWhoWon(playerTurn.current);
     }
+
     playerTurn.current = playerTurn.current === "X" ? "O" : "X";
   };
 
@@ -96,7 +103,7 @@ function GameBoard({ socket, roomCode }: GameBoardMultiplayerProps) {
   return (
     <div className="flex h-screen bg-black flex-row w-screen justify-between">
       <h1>{`It's ${playerTurn.current} turn`}</h1>
-      <div>
+      <div key={seed}>
         <Box onChange={() => handleBoxChange(0)} value={gameState[0]} />
         <Box onChange={() => handleBoxChange(1)} value={gameState[1]} />
         <Box onChange={() => handleBoxChange(2)} value={gameState[2]} />
