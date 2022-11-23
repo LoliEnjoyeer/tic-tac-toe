@@ -1,7 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import Box from "./Box";
 import Scoreboard from "./Scoreboard";
+import { Socket } from "socket.io-client";
 import { GameState, PlayerTurn } from "../types";
+
+interface GameBoardMultiplayerProps {
+  socket: Socket;
+  roomCode: string;
+}
 
 const WINNING_COMBINATIONS = [
   [0, 1, 2],
@@ -22,19 +28,23 @@ const checkWin = (gameState: GameState, playerTurn: PlayerTurn) => {
   });
 };
 
-function GameBoard() {
+function GameBoard({ socket, roomCode }: GameBoardMultiplayerProps) {
   const defaultGameState: GameState = ["", "", "", "", "", "", "", "", ""];
   const [gameState, setGameState] = useState<GameState>(defaultGameState);
   const playerTurn = useRef<PlayerTurn>("X");
   const [whoWon, setWhoWon] = useState<PlayerTurn | null>(null);
 
+  const [seed, setSeed] = useState<number>(1);
+
   const scoreX = useRef<number>(0);
   const scoreO = useRef<number>(0);
 
-  const [seed, setSeed] = useState<number>(1);
-
   useEffect(() => {
     setWhoWon(null);
+    socket.on("update_gamestate", (response) => {
+      setGameState(response.newGameState);
+      playerTurn.current = response.newTurn;
+    });
   }, []);
 
   useEffect(() => {
@@ -45,6 +55,7 @@ function GameBoard() {
         scoreO.current++;
       }
 
+      runEvent();
       reset();
     }
   }, [whoWon]);
@@ -53,17 +64,31 @@ function GameBoard() {
     setSeed(Math.random());
   };
 
-  const handleBoxChange = (boxIndex: number) => {
+  socket.on("result_response", (score) => {
+    scoreX.current = score.serverScoreX;
+    scoreO.current = score.serverScoreO;
+
+    reset();
+  });
+
+  const handleBoxChange = async (boxIndex: number) => {
     if (whoWon) return;
     const newGameState = gameState.map((element, index) => {
       return index === boxIndex ? playerTurn.current : element;
     });
 
     setGameState(newGameState);
+
     if (checkWin(newGameState, playerTurn.current)) {
       setWhoWon(playerTurn.current);
     }
+
     playerTurn.current = playerTurn.current === "X" ? "O" : "X";
+    socket.emit("new_move", {
+      newGameState: newGameState,
+      roomCode: roomCode,
+      currentTurn: playerTurn.current,
+    });
   };
 
   const resetGame = () => {
@@ -71,10 +96,18 @@ function GameBoard() {
     setGameState(defaultGameState);
   };
 
+  const runEvent = () => {
+    socket.emit("score", {
+      scoreX: scoreX.current,
+      scoreO: scoreO.current,
+      roomCode: roomCode,
+    });
+  };
+
   return (
     <div className="flex h-screen bg-black flex-row w-screen justify-between">
       <h1>{`It's ${playerTurn.current} turn`}</h1>
-      <div>
+      <div key={seed}>
         <Box onChange={() => handleBoxChange(0)} value={gameState[0]} />
         <Box onChange={() => handleBoxChange(1)} value={gameState[1]} />
         <Box onChange={() => handleBoxChange(2)} value={gameState[2]} />
@@ -90,13 +123,13 @@ function GameBoard() {
         {whoWon && <h1>{`Player ${whoWon} won`}</h1>}
       </div>
       <div>
-        <button onClick={() => resetGame()}>Reset Game</button>
         <Scoreboard
           key={seed}
           scoreO={scoreO.current}
           scoreX={scoreX.current}
         />
       </div>
+      <button onClick={() => resetGame()}>Reset Game</button>
     </div>
   );
 }
