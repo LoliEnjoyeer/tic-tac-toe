@@ -11,7 +11,7 @@ const server = http.createServer(app).listen(3001, () => {
 });
 
 const io = require("socket.io")(server, {
-  cors: { origin: "*" },
+  cors: { origin: "http://127.0.0.1:5173" },
 });
 
 io.on("connection", (socket) => {
@@ -33,7 +33,9 @@ io.on("connection", (socket) => {
   });
 
   socket.on("new_move", (data) => {
-    socket.to(data.roomCode).emit("update_gamestate", data.newGameState);
-    console.log(data.newGameState);
+    socket.to(data.roomCode).emit("update_gamestate", {
+      newGameState: data.newGameState,
+      newTurn: data.currentTurn,
+    });
   });
 });

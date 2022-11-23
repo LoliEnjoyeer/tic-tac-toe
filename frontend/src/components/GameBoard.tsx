@@ -31,9 +31,27 @@ function GameBoard() {
   const scoreX = useRef<number>(0);
   const scoreO = useRef<number>(0);
 
+  const [seed, setSeed] = useState<number>(1);
+
   useEffect(() => {
     setWhoWon(null);
   }, []);
+
+  useEffect(() => {
+    if (whoWon !== null) {
+      if (whoWon === "X") {
+        scoreX.current++;
+      } else {
+        scoreO.current++;
+      }
+
+      reset();
+    }
+  }, [whoWon]);
+
+  const reset = () => {
+    setSeed(Math.random());
+  };
 
   const handleBoxChange = (boxIndex: number) => {
     if (whoWon) return;
@@ -69,17 +87,15 @@ function GameBoard() {
         <Box onChange={() => handleBoxChange(7)} value={gameState[7]} />
         <Box onChange={() => handleBoxChange(8)} value={gameState[8]} />
 
-        {whoWon && (
-          <>
-            {whoWon === "X" ? scoreX.current++ : scoreO.current++}
-
-            <h1>{`Player ${whoWon} won`}</h1>
-            <button onClick={() => resetGame()}>Reset Game</button>
-          </>
-        )}
+        {whoWon && <h1>{`Player ${whoWon} won`}</h1>}
       </div>
       <div>
-        <Scoreboard scoreO={scoreO.current} scoreX={scoreX.current} />
+        <button onClick={() => resetGame()}>Reset Game</button>
+        <Scoreboard
+          key={seed}
+          scoreO={scoreO.current}
+          scoreX={scoreX.current}
+        />
       </div>
     </div>
   );

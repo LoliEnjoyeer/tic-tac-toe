@@ -41,9 +41,9 @@ function GameBoard({ socket, roomCode }: GameBoardMultiplayerProps) {
 
   useEffect(() => {
     setWhoWon(null);
-    socket.on("update_gamestate", (newGameState) => {
-      console.log("test123");
-      setGameState(newGameState);
+    socket.on("update_gamestate", (response) => {
+      setGameState(response.newGameState);
+      playerTurn.current = response.newTurn;
     });
   }, []);
 
@@ -78,13 +78,17 @@ function GameBoard({ socket, roomCode }: GameBoardMultiplayerProps) {
     });
 
     setGameState(newGameState);
-    socket.emit("new_move", { newGameState: newGameState, roomCode: roomCode });
 
     if (checkWin(newGameState, playerTurn.current)) {
       setWhoWon(playerTurn.current);
     }
 
     playerTurn.current = playerTurn.current === "X" ? "O" : "X";
+    socket.emit("new_move", {
+      newGameState: newGameState,
+      roomCode: roomCode,
+      currentTurn: playerTurn.current,
+    });
   };
 
   const resetGame = () => {
